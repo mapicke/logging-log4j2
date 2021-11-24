@@ -46,17 +46,30 @@ final class PrivateSecurityManagerStackTraceUtil {
     }
 
     static boolean isEnabled() {
-        return SECURITY_MANAGER != null;
+        try {
+            return PrivateSecurityManagerStackTraceUtil.SECURITY_MANAGER != null
+                    || PrivateSecurityManagerStackTraceUtil.SECURITY_MANAGER.getClassContext() != null;
+        } catch (final Exception e) {
+            return false;
+        }
     }
 
     // benchmarks show that using the SecurityManager is much faster than looping through getCallerClass(int)
     static Stack<Class<?>> getCurrentStackTrace() {
-        final Class<?>[] array = SECURITY_MANAGER.getClassContext();
         final Stack<Class<?>> classes = new Stack<>();
-        classes.ensureCapacity(array.length);
-        for (final Class<?> clazz : array) {
-            classes.push(clazz);
+
+        try {
+            final Class<?>[] array = PrivateSecurityManagerStackTraceUtil.SECURITY_MANAGER.getClassContext();
+            if (array != null) {
+                classes.ensureCapacity(array.length);
+                for (final Class<?> clazz : array) {
+                    classes.push(clazz);
+                }
+            }
+        } catch (final Exception e) {
+            // do nothing
         }
+
         return classes;
     }
 
